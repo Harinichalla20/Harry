@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Editor</title>
+  <style>
+    body {
+      background-image: url('https://images.rawpixel.com/image_800/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvcm0zMDktYWRqLTE0LmpwZw.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+
+    .card-container {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .controls {
+      margin-top: 40px;
+      margin-left: 20px;
+    }
+
+    .card {
+      width: 300px;
+      height: 500px;
+      border: 5px solid black;
+      margin: 10px;
+      padding: 40px;
+      float: left;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .control-group {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card-container">
+  <div class="card" contenteditable="true" id="editable-card">
+    <h2>MAKE YOUR OWN CARD..</h2>
+    <p>SELECTING YOUR OWN STYLE.......</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label for="colorPicker">Choose text color:</label>
+      <input type="color" id="colorPicker">
+    </div>
+
+    <div class="control-group">
+      <label for="bgColorPicker">Choose background color:</label>
+      <input type="color" id="bgColorPicker">
+    </div>
+
+    <div class="control-group">
+      <label for="bgImage">Upload background image:</label>
+      <input type="file" id="bgImage" accept="image/*" onchange="setBackgroundImage(event)">
+    </div>
+
+    <div class="control-group">
+      <label for="fontFamily">Choose font:</label>
+      <select id="fontFamily">
+        <option value="Arial">Arial</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Georgia">Georgia</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="textSize">Choose text size:</label>
+      <select id="textSize">
+        <option value="12">12</option>
+        <option value="14">14</option>
+        <option value="16">16</option>
+        <option value="18">18</option>
+        <option value="20">20</option>
+        <option value="24">24</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <button onclick="undo()">Undo</button>
+      <button onclick="redo()">Redo</button>
+      <button onclick="downloadContent()">Download Content</button> <!-- Added download button -->
+    </div>
+  </div>
+</div>
+
+<script>
+  let undoStack = [];
+  let redoStack = [];
+
+  const card = document.getElementById('editable-card');
+  const colorPicker = document.getElementById('colorPicker');
+  const bgColorPicker = document.getElementById('bgColorPicker');
+  const fontFamilySelect = document.getElementById('fontFamily');
+  const textSizeSelect = document.getElementById('textSize');
+
+  card.addEventListener('input', function() {
+    saveState();
+  });
+
+  colorPicker.addEventListener('input', function() {
+    applyColor();
+    saveState();
+  });
+
+  bgColorPicker.addEventListener('input', function() {
+    applyBackgroundColor();
+    saveState();
+  });
+
+  fontFamilySelect.addEventListener('change', function() {
+    applyFontFamily();
+    saveState();
+  });
+
+  textSizeSelect.addEventListener('change', function() {
+    applyTextSize();
+    saveState();
+  });
+
+  function saveState() {
+    undoStack.push({
+      html: card.innerHTML,
+      color: card.style.color,
+      backgroundColor: card.style.backgroundColor,
+      fontFamily: card.style.fontFamily,
+      fontSize: card.style.fontSize,
+      backgroundImage: card.style.backgroundImage
+    });
+    redoStack = [];
+  }
+
+  function undo() {
+    if (undoStack.length > 1) {
+      redoStack.push(undoStack.pop());
+      const prevState = undoStack[undoStack.length - 1];
+      updateCardState(prevState);
+    }
+  }
+
+  function redo() {
+    if (redoStack.length > 0) {
+      const nextState = redoStack.pop();
+      undoStack.push(nextState);
+      updateCardState(nextState);
+    }
+  }
+
+  function updateCardState(state) {
+    card.innerHTML = state.html;
+    card.style.color = state.color;
+    card.style.backgroundColor = state.backgroundColor;
+    card.style.fontFamily = state.fontFamily;
+    card.style.fontSize = state.fontSize;
+    card.style.backgroundImage = state.backgroundImage;
+  }
+
+  function applyColor() {
+    const color = colorPicker.value;
+    card.style.color = color;
+  }
+
+  function applyBackgroundColor() {
+    const bgColor = bgColorPicker.value;
+    card.style.backgroundColor = bgColor;
+  }
+
+  function applyFontFamily() {
+    const fontFamily = fontFamilySelect.value;
+    card.style.fontFamily = fontFamily;
+  }
+
+  function applyTextSize() {
+    const textSize = textSizeSelect.value + 'px';
+    card.style.fontSize = textSize;
+  }
+
+  function downloadContent() {
+    const content = card.innerHTML;
+    const filename = "card_content.html";
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  }
+
+  function setBackgroundImage(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const imageUrl = event.target.result;
+      card.style.backgroundImage = `url('${imageUrl}')`;
+      saveState();
+    };
+    reader.readAsDataURL(file);
+  }
+</script>
+
+</body>
+</html>
